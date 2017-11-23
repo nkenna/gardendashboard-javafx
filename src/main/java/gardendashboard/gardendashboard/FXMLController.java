@@ -10,6 +10,7 @@ import com.pubnub.api.models.consumer.pubsub.PNMessageResult;
 import com.pubnub.api.models.consumer.pubsub.PNPresenceEventResult;
 import helpers.PubnubConfig;
 import helpers.Utils;
+import java.awt.Color;
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import org.opencv.core.Core;
@@ -102,6 +104,44 @@ private CheckBox lbpClassifier;
 // face cascade classifier
 private CascadeClassifier faceCascade;
 private int absoluteFaceSize;
+    @FXML
+    private Button connect_btn;
+    @FXML
+    private Label connect_label;
+    
+    
+    
+
+    //pubnub channels
+    private final String operation = "operation";
+    private final String feedbacks = "feedbacks";
+    private final String a_temp = "a_temp";
+    private final String s_temp = "s_temp";
+    private final String humdity = "humdity";
+    private final String soil_moisture = "soil_moisture";
+
+    PubConSubThread pubConSubThread;// new PubConSubThread();
+    PubPublishThread pubPublishThread;// new PubPublishThread();
+
+    // message and channel that will be used during publishing
+    String payload;
+    String channel;
+    @FXML
+    private Label s_temp_label;
+    @FXML
+    private Label humdity_label;
+    @FXML
+    private Label soil_moisture_label;
+    @FXML
+    private Label a_temp_label;
+    @FXML
+    private Label status_label;
+    @FXML
+    private ToggleButton arm_btn;
+    @FXML
+    private ToggleButton water_btn;
+    @FXML
+    private ToggleButton torch_btn;
 	
 	/**
 	 * Init the controller, at start time
@@ -128,180 +168,40 @@ private int absoluteFaceSize;
         pubnubConfig = new PubnubConfig();
         pubnub = new PubNub(pubnubConfig.pConfig());
         
-        try {
-            pubnubSubscribe();
-             pubnubHandleDisconnect();
-        } catch (InterruptedException ex) {
-            Logger.getLogger(FXMLController.class.getName()).log(Level.SEVERE, null, ex);
-        }
+       
        
     }    
 
     @FXML
-    private void btn_up_action(ActionEvent event) throws InterruptedException {
-      
-        Runnable upThread = new Runnable(){
-            @Override
-            public void run() {
-                Platform.runLater(new Runnable(){
-                    @Override
-                    public void run() {
-                        
-                                           pubnub.publish()
-    .message("up")
-    .channel(direction)
-    .async(new PNCallback<PNPublishResult>() {
-        @Override
-        public void onResponse(PNPublishResult result, PNStatus status) {
-            // handle publish result, status always present, result if successful
-            // status.isError to see if error happened
-            
-            if (!status.isError()) {
- 
-                                // Message successfully published to specified channel.
-                                activity_label.setText("publish success");
-                            }
-                            // Request processing failed.
-                            else {
-                                   activity_label.setText("publish failed" + ":" + status.getCategory());
-                                   System.out.println(status.getCategory());
-                                    // Handle message publish error. Check 'category' property to find out possible issue
-                                // because of which request did fail.
-                                //
-                                // Request can be resent using: [status retry];
-                                status.retry();
-                            }
-            
-        }
-    });
-                        
-                    }
-                
-                });
-            }
-            
-        };
+    private void btn_up_action(ActionEvent event) {
         
-    
-                 
-        
-      
-        //publish to the channel: direction
+        this.channel = this.direction;
+        this.payload = "up";
+        this.pubPublishThread.pubnubPublish(payload, channel);
+       
          
-                }
+    }
     
     @FXML
     private void btn_left_action(ActionEvent event) {
-        activity_label.setText("LEFT");
-        
-         pubnub.publish()
-    .message("left")
-    .channel(direction)
-    .async(new PNCallback<PNPublishResult>() {
-        @Override
-        public void onResponse(PNPublishResult result, PNStatus status) {
-            // handle publish result, status always present, result if successful
-            // status.isError to see if error happened
-            
-            if (!status.isError()) {
- 
-                                // Message successfully published to specified channel.
-                                activity_label.setText("publish success");
-                            }
-                            // Request processing failed.
-                            else {
-                                   activity_label.setText("publish failed" + ":" + status.getCategory());
-                                   System.out.println(status.getCategory());
-                                    // Handle message publish error. Check 'category' property to find out possible issue
-                                // because of which request did fail.
-                                //
-                                // Request can be resent using: [status retry];
-                                status.retry();
-                            }
-            
-        }
-    });
+       this.channel = this.direction;
+        this.payload = "left";
+        this.pubPublishThread.pubnubPublish(payload, channel);
     }
 
     @FXML
     private void btn_down_action(ActionEvent event) {
-        activity_label.setText("DOWN");
-        
-         pubnub.publish()
-    .message("down")
-    .channel(direction)
-    .async(new PNCallback<PNPublishResult>() {
-        @Override
-        public void onResponse(PNPublishResult result, PNStatus status) {
-            // handle publish result, status always present, result if successful
-            // status.isError to see if error happened
-            
-            if (!status.isError()) {
- 
-                                // Message successfully published to specified channel.
-                                activity_label.setText("publish success");
-                            }
-                            // Request processing failed.
-                            else {
-                                   activity_label.setText("publish failed" + ":" + status.getCategory());
-                                   System.out.println(status.getCategory());
-                                    // Handle message publish error. Check 'category' property to find out possible issue
-                                // because of which request did fail.
-                                //
-                                // Request can be resent using: [status retry];
-                                status.retry();
-                            }
-            
-        }
-    });
+        this.channel = this.direction;
+        this.payload = "down";
+        this.pubPublishThread.pubnubPublish(payload, channel);
     }
 
     @FXML
     private void btn_right_action(ActionEvent event) {
         
-        Runnable updateLabel = new Runnable() {
-            @Override
-            public void run() {
-                Platform.runLater(new Runnable() {
-                    @Override 
-                 public void run() {
-                     pubnub.publish()
-    .message("right")
-    .channel(direction)
-    .async(new PNCallback<PNPublishResult>() {
-        @Override
-        public void onResponse(PNPublishResult result, PNStatus status) {
-            // handle publish result, status always present, result if successful
-            // status.isError to see if error happened
-            
-            if (!status.isError()) {
- 
-                                // Message successfully published to specified channel.
-                                activity_label.setText("publish success");
-                            }
-                            // Request processing failed.
-                            else {
-                                   activity_label.setText("publish failed" + ":" + status.getCategory());
-                                   System.out.println(status.getCategory());
-                                    // Handle message publish error. Check 'category' property to find out possible issue
-                                // because of which request did fail.
-                                //
-                                // Request can be resent using: [status retry];
-                                status.retry();
-                            }
-            
-        }
-    });
-                     
-                 }
-			
-		});
-            }
-            
-        };
-        
-        this.timer = Executors.newSingleThreadScheduledExecutor();
-	this.timer.execute(updateLabel);
+        this.channel = this.direction;
+        this.payload = "right";
+        this.pubPublishThread.pubnubPublish(payload, channel);
 				
         
         
@@ -310,132 +210,8 @@ private int absoluteFaceSize;
     }
 
 
-    public void pubnubSubscribe() throws InterruptedException{
-        
-        Runnable subthread = new Runnable(){
-            @Override
-            public void run() {
-               pubnub.addListener(new SubscribeCallback() {
-        @Override
-        public void status(PubNub pubnub, PNStatus status) {
- 
- 
-            if (status.getCategory() == PNStatusCategory.PNUnexpectedDisconnectCategory) {
-                // This event happens when radio / connectivity is lost
-                pubnub.reconnect();
-            }
- 
-            else if (status.getCategory() == PNStatusCategory.PNConnectedCategory) {
- 
-                // Connect event. You can do stuff like publish, and know you'll get it.
-                // Or just use the connected event to confirm you are subscribed for
-                // UI / internal notifications, etc
-             
-                if (status.getCategory() == PNStatusCategory.PNConnectedCategory){
-                 
-                }
-            }
-            else if (status.getCategory() == PNStatusCategory.PNReconnectedCategory) {
- 
-                // Happens as part of our regular operation. This event happens when
-                // radio / connectivity is lost, then regained.
-            }
-            else if (status.getCategory() == PNStatusCategory.PNDecryptionErrorCategory) {
- 
-                // Handle messsage decryption error. Probably client configured to
-                // encrypt messages and on live data feed it received plain text.
-            }
-        }
- 
-        @Override
-        public void message(PubNub pubnub, PNMessageResult message) {
-            // Handle new message stored in message.message
-            if (message.getChannel() != null) {
-                // Message has been received on channel group stored in
-                // message.getChannel()
-            }
-            else {
-                // Message has been received on channel stored in
-                // message.getSubscription()
-            }
- 
-            /*
-                log the following items with your favorite logger
-                    - message.getMessage()
-                    - message.getSubscription()
-                    - message.getTimetoken()
-            */
-            
-            activity_label.setText(message.getMessage().getAsString());
-            System.out.println(message.getMessage().getAsString());
-        }
- 
-        @Override
-        public void presence(PubNub pubnub, PNPresenceEventResult presence) {
- 
-        }
-        
-      
-    });
-               pubnub.subscribe().channels(Arrays.asList(direction)).execute();
-            }
-              
-        };
-        
-        subthread.run();
-                     
-                      
-    
-                     
-                 }
-             
-        
-        
-       
-
-        
 
 
-    
-    public void pubnubHandleDisconnect() throws InterruptedException{
-        
-        Platform.runLater(new Runnable() {
-                 @Override 
-                 public void run() {
-                     
-                      SubscribeCallback subscribeCallback = new SubscribeCallback() {
-    @Override
-    public void status(PubNub pubnub, PNStatus status) {
-        if (status.getCategory() == PNStatusCategory.PNUnexpectedDisconnectCategory) {
-            // internet got lost, do some magic and call reconnect when ready
-            pubnub.reconnect();
-        } else if (status.getCategory() == PNStatusCategory.PNTimeoutCategory) {
-            // do some magic and call reconnect when ready
-            pubnub.reconnect();
-        } else {
-            System.out.println(status);
-        }
-    }
- 
-    @Override
-    public void message(PubNub pubnub, PNMessageResult message) {
- 
-    }
- 
-    @Override
-    public void presence(PubNub pubnub, PNPresenceEventResult presence) {
- 
-    }
-};
- 
-pubnub.addListener(subscribeCallback);
-                     
-                 }
-             });
-        Thread.sleep(1000);
-        
-       
-    }
 
     @FXML
     private void btn_start_action(ActionEvent event) {
@@ -738,6 +514,343 @@ pubnub.addListener(subscribeCallback);
 		// now the video capture can start
 		this.btn_start.setDisable(false);
 	}
+
+    @FXML
+    private void connect_btn_action(ActionEvent event) {
+        
+
+        pubPublishThread = new PubPublishThread();
+        pubConSubThread = new PubConSubThread();
+        
+        
+
+
+        try {
+
+            pubConSubThread.start();
+            pubPublishThread.start();
+        }catch (Exception e){
+            connect_label.setText(e.getMessage());
+            
+        }
+
+    }
+    
+    public void updateConnectLabel(String col, String cStatus){
+        this.connect_label.setStyle(col);
+        this.connect_label.setText(cStatus);
+    }
+    
+    public void updateStatusLabel(String col, String publishStatus){
+        this.status_label.setStyle(col);
+        this.status_label.setText(publishStatus);
+    }
+    
+    public void updateActivityLabel(String message ){
+        activity_label.setText(message);
+    }
+    
+    public void updateAmbTempLabel(String message ){
+        a_temp_label.setText(message);
+    }
+    
+    public void updateSoilTempLabel(String message ){
+        s_temp_label.setText(message);
+    }
+    
+    public void updateHumdityLabel(String message ){
+        humdity_label.setText(message);
+    }
+    
+    public void updateSoilMositureLabel(String message ){
+        soil_moisture_label.setText(message);
+    }
+    
+    public void updateArmBtnText(String text){
+        arm_btn.setText(text);
+    }
+    
+    public void updateWaterBtnText(String text){
+        water_btn.setText(text);
+    }
+    
+    public void updateTorchBtnText(String text){
+        torch_btn.setText(text);
+    }
+
+    @FXML
+    private void arm_btn_action(ActionEvent event) {
+        if(arm_btn.isSelected()){
+        this.channel = this.operation;
+        this.payload = "arm";
+        this.pubPublishThread.pubnubPublish(payload, channel);
+        }else{
+            this.channel = this.operation;
+        this.payload = "disarm";
+        this.pubPublishThread.pubnubPublish(payload, channel);
+        }
+    }
+
+    @FXML
+    private void water_btn_action(ActionEvent event) {
+         if(water_btn.isSelected()){
+        this.channel = this.operation;
+        this.payload = "water on";
+        this.pubPublishThread.pubnubPublish(payload, channel);
+        }else{
+            this.channel = this.operation;
+        this.payload = "water off";
+        this.pubPublishThread.pubnubPublish(payload, channel);
+        }
+    }
+
+    @FXML
+    private void torch_btn_action(ActionEvent event) {
+         if(torch_btn.isSelected()){
+        this.channel = this.operation;
+        this.payload = "torch on";
+        this.pubPublishThread.pubnubPublish(payload, channel);
+        }else{
+            this.channel = this.operation;
+        this.payload = "torch off";
+        this.pubPublishThread.pubnubPublish(payload, channel);
+        }
+    }
+        
+        
+        /**
+     * Created by General Steinacoz on 11/21/2017.
+     */
+    public class PubConSubThread extends Thread {
+        public static final String Tag = "Pubnub Connect Subscribe Thread";
+        
+
+        
+        @Override
+        public void run() {
+            try {
+                pubnubConSubscribe();
+            }catch (Exception e){
+                final String err = e.getMessage();
+                
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        connectProgress("color: #d31313", "Error in Connection");
+                    }
+                    
+                });
+                
+               
+            }
+        }
+
+        //pubnub connect and subscribe
+        private void pubnubConSubscribe(){
+
+            connectProgress("color: #d31313", "Connecting");
+
+            
+
+            pubnub.addListener(new SubscribeCallback() {
+                @Override
+                public void status(PubNub pubnub, PNStatus status) {
+                   
+
+                    if (status.getCategory() == PNStatusCategory.PNUnexpectedDisconnectCategory){
+                        connectProgress("color: #d31313", "Disconnected");
+                        pubnub.reconnect();
+                    }else if (status.getCategory() == PNStatusCategory.PNConnectedCategory){
+                        if (status.getCategory() == PNStatusCategory.PNConnectedCategory){
+                            connectProgress("color: #3dd612", "Connected");
+                            pubnub.subscribe().channels(Arrays.asList(direction)).execute();
+                        }else if (status.getCategory() == PNStatusCategory.PNReconnectedCategory){
+
+                            connectProgress("color: #3dd612", "Reconnected");
+                            pubnub.subscribe().channels(Arrays.asList(direction)).execute();
+                        }else if (status.getCategory() == PNStatusCategory.PNDecryptionErrorCategory){
+                            pubnub.reconnect();
+                        }else if (status.getCategory() == PNStatusCategory.PNTimeoutCategory){
+                            pubnub.reconnect();
+                        }else {
+                            pubnub.reconnect();
+
+                            connectProgress("d31313", "No Connection");
+                        }
+                    }
+                }
+
+                @Override
+                public void message(PubNub pubnub, final PNMessageResult message) {
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (message.getChannel().equalsIgnoreCase(feedbacks) || message.getChannel().equalsIgnoreCase(operation) || message.getChannel().equalsIgnoreCase(direction)){
+                                
+                                updateActivityLabel(message.getMessage().getAsString() );
+                            }else if (message.getChannel().equalsIgnoreCase(a_temp)){
+                               updateAmbTempLabel(message.getMessage().getAsString());
+                            }else if (message.getChannel().equalsIgnoreCase(s_temp)){
+                               updateSoilTempLabel(message.getMessage().getAsString());
+                            }else if (message.getChannel().equalsIgnoreCase(humdity)){
+                                updateHumdityLabel(message.getMessage().getAsString());
+                            }else if (message.getChannel().equalsIgnoreCase(soil_moisture)){
+                                updateSoilMositureLabel(message.getMessage().getAsString());
+                            }
+                            
+                            
+                            if(message.getChannel().equalsIgnoreCase(feedbacks) && message.getMessage().getAsString().equalsIgnoreCase("security armed")){
+                                   Platform.runLater(new Runnable(){
+                                       @Override
+                                       public void run() {
+                                          updateArmBtnText("Armed");
+                                       }
+                                       
+                                   });
+                            }else if(message.getChannel().equalsIgnoreCase(feedbacks) && message.getMessage().getAsString().equalsIgnoreCase("security disarmed")){
+                                   Platform.runLater(new Runnable(){
+                                       @Override
+                                       public void run() {
+                                          updateArmBtnText("Disarmed");
+                                       }
+                                       
+                                   });
+                            }else if(message.getChannel().equalsIgnoreCase(feedbacks) && message.getMessage().getAsString().equalsIgnoreCase("water switched on")){
+                                Platform.runLater(new Runnable(){
+                                       @Override
+                                       public void run() {
+                                          updateWaterBtnText("water on");
+                                       }
+                                       
+                                   });
+                            }else if(message.getChannel().equalsIgnoreCase(feedbacks) && message.getMessage().getAsString().equalsIgnoreCase("water switched off")){
+                                Platform.runLater(new Runnable(){
+                                       @Override
+                                       public void run() {
+                                          updateWaterBtnText("Water off");
+                                       }
+                                       
+                                   });
+                            }else if(message.getChannel().equalsIgnoreCase(feedbacks) && message.getMessage().getAsString().equalsIgnoreCase("torch switched on")){
+                                Platform.runLater(new Runnable(){
+                                       @Override
+                                       public void run() {
+                                          updateTorchBtnText("Torch on");
+                                       }
+                                       
+                                   });
+                            }else if(message.getChannel().equalsIgnoreCase(feedbacks) && message.getMessage().getAsString().equalsIgnoreCase("torch switched off")){
+                                Platform.runLater(new Runnable(){
+                                       @Override
+                                       public void run() {
+                                          updateTorchBtnText("Torch off");
+                                       }
+                                       
+                                   });
+                            }
+                        }
+                        
+                    });
+                    
+                   
+                }
+
+                @Override
+                public void presence(PubNub pubnub, PNPresenceEventResult presence) {
+
+                }
+            });
+
+            pubnub.subscribe().channels(Arrays.asList(direction, operation, feedbacks, a_temp, s_temp, soil_moisture, humdity )).execute();
+        }
+
+        private void connectProgress(String colour, String connectStatus){
+            final String col = colour;
+            final String cStatus = connectStatus;
+            
+            Platform.runLater(new Runnable(){
+                @Override
+                public void run() {
+                    updateConnectLabel(col, cStatus);
+                }
+                
+            });
+           
+
+        }
+
+
+    }
+
+
+
+    /**
+     * Created by General Steinacoz on 11/21/2017.
+     */
+    public class PubPublishThread extends Thread {
+        public static final String Tag = "Pubnub Publish Thread";
+        
+
+        
+
+
+        @Override
+        public void run() {
+            super.run();
+
+        }
+
+
+
+        public void pubnubPublish(String payload, String channel){
+
+            try {
+                pubnub.publish().message(payload).channel(channel).async(new PNCallback<PNPublishResult>() {
+                    @Override
+                    public void onResponse(PNPublishResult result, PNStatus status) {
+                        if (!status.isError()) {
+                            publishProgress("#3dd612", "publish success");
+                        } else {
+                            publishProgress("#d31313", status.getCategory().toString());
+                            status.retry();
+                        }
+
+                    }
+                });
+            }catch (Exception e){
+               final String err = e.getMessage();
+               Platform.runLater(new Runnable(){
+                   @Override
+                   public void run() {
+                       publishProgress("#d31313", err);
+                   }
+                   
+               });
+               
+            }
+        }
+
+        private void publishProgress(final String colour, final String publishStatus){
+            Platform.runLater(new Runnable(){
+                   @Override
+                   public void run() {
+                       try{
+                       updateStatusLabel(colour, publishStatus);
+                       }catch(Exception e){
+                          updateStatusLabel(colour, e.getMessage()); 
+                       }
+                   }
+                   
+               });
+            
+            
+        }
+    }
+
+
+
+        
+        
 }
 	
 
